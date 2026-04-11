@@ -48,9 +48,9 @@ services:
       SPRING_DATASOURCE_USERNAME: lifeos
       SPRING_DATASOURCE_PASSWORD: mypass
     restart: unless-stopped
-    # Expose port 8081 ONLY to the internal docker network (not to the host machine)
+    # Expose port 8080 ONLY to the internal docker network (not to the host machine)
     expose:
-      - "8081"
+      - "8080"
 
   # ==========================================
   # Frontend Service (Vue)
@@ -61,9 +61,9 @@ services:
       context: ./lifeos-web
     container_name: lifeos_frontend
     restart: unless-stopped
-    # Expose port 81 ONLY to the internal docker network (not to the host machine)
+    # Expose port 80 ONLY to the internal docker network (not to the host machine)
     expose:
-      - "81"
+      - "80"
 
   # ==========================================
   # Reverse Proxy Service (Nginx)
