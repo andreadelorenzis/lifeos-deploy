@@ -1,0 +1,88 @@
+# Docker Compose configuration for the Productivity App
+# The configuration sets up 4 services:
+# - db: PostgreSQL database
+# - backend: Spring Boot API
+# - frontend: Vue JS application
+# - proxy: Nginx reverse proxy routing traffic to backend and frontend
+
+services:
+  # ==========================================
+  # Database Service
+  # ==========================================
+  db:
+    image: postgres:15-alpine
+    container_name: lifeos_db
+    environment:
+      # These credentials match the mock values from application.properties.
+      # In production, securely override these using a .env file.
+      POSTGRES_DB: lifeos
+      POSTGRES_USER: lifeos
+      POSTGRES_PASSWORD: mypass
+    volumes:
+      # Named volume to persist database records across container restarts
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    # Make sure the database is fully ready before other services try to connect
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lifeos -d lifeos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ==========================================
+  # Backend Service (Spring Boot)
+  # ==========================================
+  backend:
+    build:
+      # Tells Docker to find the Dockerfile inside the lifeos-api directory
+      context: ./lifeos-api
+    container_name: lifeos_backend
+    depends_on:
+      db:
+        # Wait until the 'db' service passes its healthcheck
+        condition: service_healthy
+    environment:
+      # Override the properties in application.properties using Spring Boot env var mapping
+      # The host here is 'db', which matches the service name of the postgres database
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/lifeos
+      SPRING_DATASOURCE_USERNAME: lifeos
+      SPRING_DATASOURCE_PASSWORD: mypass
+    restart: unless-stopped
+    # Expose port 8081 ONLY to the internal docker network (not to the host machine)
+    expose:
+      - "8081"
+
+  # ==========================================
+  # Frontend Service (Vue)
+  # ==========================================
+  frontend:
+    build:
+      # Tells Docker to find the Dockerfile inside the lifeos-web directory
+      context: ./lifeos-web
+    container_name: lifeos_frontend
+    restart: unless-stopped
+    # Expose port 81 ONLY to the internal docker network (not to the host machine)
+    expose:
+      - "81"
+
+  # ==========================================
+  # Reverse Proxy Service (Nginx)
+  # ==========================================
+  proxy:
+    image: nginx:alpine
+    container_name: lifeos_proxy
+    depends_on:
+      - frontend
+      - backend
+    volumes:
+      # Map our locally created proxy config file directly into the nginx configuration folder inside the container
+      # The :ro means read-only, prohibiting the container from altering the host file.
+      - ./proxy/proxy.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      # Maps the host machine port 81 to the container port 80 (As requested by the user)
+      - "81:80"
+    restart: unless-stopped
+
+volumes:
+  # Declare the named volume for database persistence
+  db_data:
