@@ -59,6 +59,8 @@ services:
     build:
       # Tells Docker to find the Dockerfile inside the lifeos-web directory
       context: ./lifeos-web
+      args:
+        - VITE_API_BASE_URL=/api
     container_name: lifeos_frontend
     restart: unless-stopped
     # Expose port 80 ONLY to the internal docker network (not to the host machine)
