@@ -31,18 +31,18 @@ deploy-to-server:
         cd /home/andre/docker/lifeos
         
         # Login to GitLab Container Registry
-        docker login -u \$DEPLOY_TOKEN_USER -p \$DEPLOY_TOKEN_PASSWORD $CI_REGISTRY
+        docker login -u $DEPLOY_TOKEN_USER -p $DEPLOY_TOKEN_PASSWORD $CI_REGISTRY
         
         # Sets environment variables on the server for docker-compose.yml
         export FE_REGISTRY_IMAGE=$CI_REGISTRY/dev/lifeos-web
         export BE_REGISTRY_IMAGE=$CI_REGISTRY/dev/lifeos-api
         
         # Pull latest images
-        docker-compose pull
+        docker compose pull
         
         # Deploy
         # Options used:
         # -d                  "detached" mode (background)
         # --remove-orphans     Cleans up any old containers that are no longer defined in the current docker-compose.yml file.
-        docker-compose up -d --remove-orphans
+        docker compose up -d --remove-orphans
       "
