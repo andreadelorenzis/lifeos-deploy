@@ -18,6 +18,8 @@ services:
       POSTGRES_DB: lifeos
       POSTGRES_USER: lifeos
       POSTGRES_PASSWORD: mypass
+    ports:
+      - "5432:5432"
     volumes:
       # Named volume to persist database records across container restarts
       - db_data:/var/lib/postgresql/data
@@ -33,9 +35,8 @@ services:
   # Backend Service (Spring Boot)
   # ==========================================
   backend:
-    build:
-      # Tells Docker to find the Dockerfile inside the lifeos-api directory
-      context: ./lifeos-api
+    # This tells Docker where the container image is
+    image: ${BE_REGISTRY_IMAGE:-lifeos_backend}:latest
     container_name: lifeos_backend
     depends_on:
       db:
@@ -56,11 +57,8 @@ services:
   # Frontend Service (Vue)
   # ==========================================
   frontend:
-    build:
-      # Tells Docker to find the Dockerfile inside the lifeos-web directory
-      context: ./lifeos-web
-      args:
-        - VITE_API_BASE_URL=/api
+    # This tells Docker where the container image is
+    image: ${FE_REGISTRY_IMAGE:-lifeos_frontend}:latest
     container_name: lifeos_frontend
     restart: unless-stopped
     # Expose port 80 ONLY to the internal docker network (not to the host machine)

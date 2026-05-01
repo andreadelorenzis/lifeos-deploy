@@ -1,0 +1,48 @@
+stages:
+  - deploy
+
+deploy-to-server:
+  stage: deploy
+  image: alpine:latest
+  resource_group: production  # Prevents race conditions if FE and BE trigger simultaneously
+  before_script:
+    # Installs the SSH client tools.
+    - apk add --no-cache openssh-client
+    # Starts the SSH agent in the background to manage your keys.
+    - eval $(ssh-agent -s)
+    # Takes your secret private key and loads it into the agent
+    - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
+    # Creates the hidden SSH directory and sets the correct secure permissions.
+    - mkdir -p ~/.ssh
+    - chmod 700 ~/.ssh
+    # Captures the server's fingerprint and adds it to "known_hosts" so the script isn't interrupted by a "Do you trust this host?" prompt.
+    - ssh-keyscan $SERVER_IP >> ~/.ssh/known_hosts
+  script:
+    # 1. Copy the necessary files to the server
+    - ssh $SERVER_USER@$SERVER_IP "mkdir -p /home/app/productivity/proxy"
+    - scp docker-compose.yml proxy/proxy.conf $SERVER_USER@$SERVER_IP:/home/app/productivity/
+    
+    # 2. Connect to the server, login to registry, and deploy
+    # The | symbol indicates a multi-line block of commands
+    - |
+      ssh $SERVER_USER@$SERVER_IP "
+        # ALL OF THIS IS EXECUTED ON THE REMOTE SERVER
+
+        cd /home/app/productivity 
+        
+        # Login to GitLab Container Registry
+        docker login -u \$DEPLOY_TOKEN_USER -p \$DEPLOY_TOKEN_PASSWORD $CI_REGISTRY
+        
+        # Sets environment variables on the server for docker-compose.yml
+        export FE_REGISTRY_IMAGE=$CI_REGISTRY/dev/lifeos-web
+        export BE_REGISTRY_IMAGE=$CI_REGISTRY/dev/lifeos-api
+        
+        # Pull latest images
+        docker-compose pull
+        
+        # Deploy
+        # Options used:
+        # -d                  "detached" mode (background)
+        # --remove-orphans     Cleans up any old containers that are no longer defined in the current docker-compose.yml file.
+        docker-compose up -d --remove-orphans
+      "
