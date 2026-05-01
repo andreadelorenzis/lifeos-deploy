@@ -19,8 +19,8 @@ deploy-to-server:
     - ssh-keyscan $SERVER_IP >> ~/.ssh/known_hosts
   script:
     # 1. Copy the necessary files to the server
-    - ssh $SERVER_USER@$SERVER_IP "mkdir -p /home/app/productivity/proxy"
-    - scp docker-compose.yml proxy/proxy.conf $SERVER_USER@$SERVER_IP:/home/app/productivity/
+    - ssh $SERVER_USER@$SERVER_IP "mkdir -p /home/andre/docker/lifeos/proxy"
+    - scp docker-compose.yml proxy/proxy.conf $SERVER_USER@$SERVER_IP:/home/andre/docker/lifeos/
     
     # 2. Connect to the server, login to registry, and deploy
     # The | symbol indicates a multi-line block of commands
@@ -28,7 +28,7 @@ deploy-to-server:
       ssh $SERVER_USER@$SERVER_IP "
         # ALL OF THIS IS EXECUTED ON THE REMOTE SERVER
 
-        cd /home/app/productivity 
+        cd /home/andre/docker/lifeos
         
         # Login to GitLab Container Registry
         docker login -u \$DEPLOY_TOKEN_USER -p \$DEPLOY_TOKEN_PASSWORD $CI_REGISTRY
